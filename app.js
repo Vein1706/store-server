@@ -1,17 +1,20 @@
-/*
- * @Author: hai-27
- * @Date: 2020-02-07 16:51:56
- * @LastEditors: hai-27
- * @LastEditTime: 2020-04-07 23:40:51
- */
 const Koa = require('koa');
 const KoaStatic = require('koa-static');
 const KoaBody = require('koa-body');
 const Session = require('koa-session');
+const cors = require('@koa/cors');
 
 let { Port, staticDir } = require('./config');
 
 let app = new Koa();
+
+const corsOptions = {
+  origin: '*', // Allow all origins (adjust as needed for security)
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  allowHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+};
+
+app.use(cors(corsOptions));
 
 // 处理异常
 const error = require('./app/middleware/error');

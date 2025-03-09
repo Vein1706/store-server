@@ -19,5 +19,7 @@ productRouter
   .post('/product/getProductBySearch', productController.GetProductBySearch)
   .post('/product/getDetails', productController.GetDetails)
   .post('/product/getDetailsPicture', productController.GetDetailsPicture)
+  .post('/product/CreateProduct', productController.CreateProduct)
+  .post('/product/CreateCategory', productController.CreateCategory)
   
 module.exports = productRouter;

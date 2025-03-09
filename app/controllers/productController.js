@@ -1,11 +1,16 @@
-/*
- * @Description: 商品模块控制器
- * @Author: hai-27
- * @Date: 2020-02-07 16:51:56
- * @LastEditors: hai-27
- * @LastEditTime: 2020-02-27 15:41:11
- */
 const productDao = require('../models/dao/productDao');
+const Minio = require('minio');
+const fs = require('fs');
+const path = require('path');
+
+const minioClient = new Minio.Client({
+  endPoint: '47.239.72.7',
+  port: 9001,
+  useSSL: false,
+  accessKey: 'admin',
+  secretKey: 'admin123'
+});
+
 module.exports = {
   /**
    * 获取商品分类
@@ -159,6 +164,50 @@ module.exports = {
     ctx.body = {
       code: '001',
       ProductPicture,
+    }
+  },
+  CreateProduct: async ctx => {
+    const { catid, name, title, intro, price, selling_price, num } = ctx.request.body;
+    const file = ctx.request.files?.image; // 获取上传的文件
+
+    if (!file) {
+      ctx.body = { code: '002', message: '图片文件不能为空' };
+      return;
+    }
+
+    const fileStream = fs.createReadStream(file.path);
+    const fileName = `${Date.now()}_${path.basename(file.name)}`;
+    const bucketName = 'mall-images';
+    const objectName = fileName;
+
+    try {
+      // 上传图片到 MinIO
+      await minioClient.putObject(bucketName, objectName, fileStream);
+      const imageUrl = `http://47.239.72.7:9001/${bucketName}/${objectName}`;
+
+      // 存入数据库
+      const result = await productDao.CreateProduct({
+        catid, name, title, intro, price, selling_price, num, imageUrl
+      });
+
+      ctx.body = { code: '001', message: 'product created succeed', productId: result.insertId };
+    } catch (error) {
+      ctx.body = { code: '003', message: 'product created failed', error };
+    }
+  },
+  CreateCategory: async ctx => {
+    const { catName } = ctx.request.body;
+
+    if (!catName) {
+      ctx.body = { code: '002', message: 'catName should not be empty!' };
+      return;
+    }
+
+    try {
+      const result = await productDao.CreateCategory(catName);
+      ctx.body = { code: '001', message: 'category created succeed', categoryId: result.insertId };
+    } catch (error) {
+      ctx.body = { code: '003', message: 'category created failed', error };
     }
   }
 }

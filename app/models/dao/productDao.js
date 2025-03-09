@@ -1,10 +1,3 @@
-/*
- * @Description: 商品模块数据持久层
- * @Author: hai-27
- * @Date: 2020-02-07 16:51:56
- * @LastEditors: hai-27
- * @LastEditTime: 2020-02-27 15:42:52
- */
 const db = require('./db.js');
 
 module.exports = {
@@ -64,5 +57,17 @@ module.exports = {
   GetDetailsPicture: async (productID) => {
     const sql = "select * from product_picture where product_id = ? ";
     return await db.query(sql, productID);
+  },
+  CreateProduct: async (product) => {
+    const sql = `INSERT INTO product (category_id, product_name, product_title, product_intro, product_price, product_selling_price, product_num, product_sales, product_picture)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    return await db.query(sql, [
+      product.catid, product.name, product.title, product.intro,
+      product.price, product.selling_price, product.num, 0, product.imageUrl
+    ]);
+  },
+  CreateCategory: async (catName) => {
+    const sql = `INSERT INTO category (category_name) VALUES (?)`;
+    return await db.query(sql, [catName]);
   }
 }
