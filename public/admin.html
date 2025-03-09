@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        form { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; }
+        label, input, select, textarea { display: block; margin-bottom: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h2>Manage Categories</h2>
+    <form id="categoryForm">
+        <label for="catName">Category Name:</label>
+        <input type="text" id="catName" name="catName" required>
+        <button type="submit">Add Category</button>
+    </form>
+    
+    <h2>Manage Products</h2>
+    <form id="productForm" enctype="multipart/form-data">
+        <label for="catid">Category:</label>
+        <select id="catid" name="catid" required>
+            <option value="" disabled selected>Select a category</option>
+        </select>
+        
+        <label for="productName">Product Name:</label>
+        <input type="text" id="productName" name="name" required>
+        
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required>
+        
+        <label for="intro">Introduction:</label>
+        <textarea id="intro" name="intro" required></textarea>
+        
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" step="0.01" required>
+        
+        <label for="selling_price">Selling Price:</label>
+        <input type="number" id="selling_price" name="selling_price" step="0.01" required>
+        
+        <label for="num">Stock Quantity:</label>
+        <input type="number" id="num" name="num" required>
+        
+        <label for="image">Product Image (JPG, PNG, GIF | max 10MB):</label>
+        <input type="file" id="image" name="image" accept="image/jpeg, image/png, image/gif" required>
+        
+        <button type="submit">Add Product</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch("http://47.239.72.7/api/product/getCategory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.category || !Array.isArray(data.category)) {
+                    console.error("Unexpected API response format:", data);
+                    return;
+                }
+                let categorySelect = document.getElementById('catid');
+                data.category.forEach(category => {
+                    let option = document.createElement('option');
+                    option.value = category.category_id;
+                    option.textContent = category.category_name;
+                    categorySelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error("CORS error or fetch failed:", error));
+        });
+
+        document.getElementById('categoryForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            fetch("http://47.239.72.7/api/product/createCategory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ catName: document.getElementById('catName').value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.code === '001') {
+                    location.reload();
+                }
+            })
+            .catch(error => alert("Error adding category: " + error));
+        });
+
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let fileInput = document.getElementById('image');
+            let file = fileInput.files[0];
+            if (!file) {
+                alert("Please select an image file.");
+                return;
+            }
+            let validExtensions = ["image/jpeg", "image/png", "image/gif"];
+            if (!validExtensions.includes(file.type)) {
+                alert("Invalid file format. Please upload a JPG, PNG, or GIF image.");
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert("File size exceeds 10MB limit.");
+                return;
+            }
+            let formData = new FormData(this);
+            fetch("http://47.239.72.7/api/product/createProduct", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.code === '001') {
+                    location.reload();
+                }
+            })
+            .catch(error => alert("Error adding product: " + error));
+        });
+    </script>
+</body>
+</html>
