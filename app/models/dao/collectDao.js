@@ -1,10 +1,3 @@
-/*
- * @Description: 我的收藏模块数据持久层
- * @Author: hai-27
- * @Date: 2020-03-04 22:33:56
- * @LastEditors: hai-27
- * @LastEditTime: 2020-03-10 17:50:37
- */
 const db = require('./db.js');
 
 module.exports = {

@@ -1,10 +1,3 @@
-/*
- * @Description: 校验用户信息是否符合规则
- * @Author: hai-27
- * @Date: 2020-02-25 15:43:27
- * @LastEditors: hai-27
- * @LastEditTime: 2020-02-27 02:04:35
- */
 module.exports = {
   /**
    * 校验用户信息是否符合规则

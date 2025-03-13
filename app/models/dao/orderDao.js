@@ -1,10 +1,3 @@
-/*
- * @Description: 订单模块数据持久层
- * @Author: hai-27
- * @Date: 2020-02-24 16:36:19
- * @LastEditors: hai-27
- * @LastEditTime: 2020-02-27 14:31:56
- */
 const db = require('./db.js');
 
 module.exports = {

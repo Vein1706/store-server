@@ -1,10 +1,3 @@
-/*
- * @Description: 订单模块控制器
- * @Author: hai-27
- * @Date: 2020-02-24 16:35:22
- * @LastEditors: hai-27
- * @LastEditTime: 2020-02-27 14:32:16
- */
 const orderDao = require('../models/dao/orderDao');
 const shoppingCartDao = require('../models/dao/shoppingCartDao');
 const productDao = require('../models/dao/productDao');

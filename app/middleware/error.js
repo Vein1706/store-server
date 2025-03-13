@@ -1,10 +1,3 @@
-/*
- * @Description: 全局错误处理中间件
- * @Author: hai-27
- * @Date: 2020-04-07 23:11:48
- * @LastEditors: hai-27
- * @LastEditTime: 2020-04-07 23:13:33
- */
 module.exports = async (ctx, next) => {
   try {
     await next();

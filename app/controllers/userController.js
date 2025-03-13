@@ -1,10 +1,3 @@
-/*
- * @Description: 用户模块控制器
- * @Author: hai-27
- * @Date: 2020-02-07 16:51:56
- * @LastEditors: hai-27
- * @LastEditTime: 2020-03-27 16:03:09
- */
 const rp = require('request-promise');
 const userDao = require('../models/dao/userDao');
 const { checkUserInfo, checkUserName } = require('../middleware/checkUserInfo');

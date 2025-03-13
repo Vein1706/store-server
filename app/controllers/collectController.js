@@ -1,10 +1,3 @@
-/*
- * @Description: 我的收藏模块控制器
- * @Author: hai-27
- * @Date: 2020-03-04 22:30:31
- * @LastEditors: hai-27
- * @LastEditTime: 2020-03-04 23:32:23
- */
 const collectDao = require('../models/dao/collectDao');
 const productDao = require('../models/dao/productDao');
 const checkLogin = require('../middleware/checkLogin');
