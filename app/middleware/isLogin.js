@@ -3,7 +3,7 @@ module.exports = async (ctx, next) => {
     if (!ctx.session.user) {
       ctx.body = {
         code: '401',
-        msg: '用户没有登录，请登录后再操作'
+        msg: 'User is not logged in, please log in before proceeding'
       }
       return;
     }

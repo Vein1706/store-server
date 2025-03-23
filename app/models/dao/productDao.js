@@ -12,6 +12,11 @@ module.exports = {
     const category = await db.query(sql, [categoryName]);
     return category[0].category_id;
   },
+  GetCategoryName: async (categoryID) => {
+    const sql = "select * from category where category_id = ?";
+    const category = await db.query(sql, [categoryID]);
+    return category[0].category_name;
+  },
   // 连接数据库,根据商品分类id获取首页展示的商品信息
   GetPromoProduct: async (categoryID) => {
     const sql = "select * from product where category_id = ? order by product_sales desc limit 7";
@@ -44,8 +49,8 @@ module.exports = {
 
     if (rows != 0) {
       sql += "order by product_sales desc limit " + offset + "," + rows;
+      
     }
-    
     return await db.query(sql, []);
   },
   // 连接数据库,根据商品id,获取商品详细信息

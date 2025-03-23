@@ -13,7 +13,7 @@ const minioClient = new Minio.Client({
 
 module.exports = {
   /**
-   * 获取商品分类
+   * Get product categories
    * @param {Object} ctx
    */
   GetCategory: async ctx => {
@@ -25,14 +25,14 @@ module.exports = {
     }
   },
   /**
-   * 根据商品分类名称获取首页展示的商品信息
+   * Get promotional product information based on category name
    * @param {Object} ctx
    */
   GetPromoProduct: async ctx => {
     let { categoryName } = ctx.request.body;
-    // 根据商品分类名称获取分类id
+    // Get category ID based on category name
     const categoryID = await productDao.GetCategoryId(categoryName);
-    // 根据商品分类id获取首页展示的商品信息
+    // Get promotional product information based on category ID
     const Product = await productDao.GetPromoProduct(categoryID);
 
     ctx.body = {
@@ -41,7 +41,7 @@ module.exports = {
     }
   },
   /**
-   * 根据商品分类名称获取热门商品信息
+   * Get hot product information based on category name
    * @param {Object} ctx
    */
   GetHotProduct: async ctx => {
@@ -49,11 +49,11 @@ module.exports = {
     const categoryID = [];
 
     for (let i = 0; i < categoryName.length; i++) {
-      // 根据商品分类名称获取分类id
+      // Get category ID based on category name
       const category_id = await productDao.GetCategoryId(categoryName[i]);
       categoryID.push(category_id);
     }
-    // 根据商品分类id获取商品信息
+    // Get product information based on category ID
     const Product = await productDao.GetProductByCategory(categoryID, 0, 7);
 
     ctx.body = {
@@ -62,15 +62,15 @@ module.exports = {
     }
   },
   /**
-   * 分页获取所有的商品信息
+   * Paginate and get all product information
    * @param {Object} ctx
    */
   GetAllProduct: async ctx => {
     let { currentPage, pageSize } = ctx.request.body;
-    // 计算开始索引
+    // Calculate the starting index
     const offset = (currentPage - 1) * pageSize;
     const Product = await productDao.GetAllProduct(offset, pageSize);
-    // 获取所有的商品数量,用于前端分页计算
+    // Get the total number of products for pagination calculation on the frontend
     const total = (await productDao.GetAllProduct()).length;
     ctx.body = {
       code: '001',
@@ -79,16 +79,16 @@ module.exports = {
     }
   },
   /**
-   * 根据分类id,分页获取商品信息
+   * Paginate and get product information based on category ID
    * @param {Object} ctx
    */
   GetProductByCategory: async ctx => {
     let { categoryID, currentPage, pageSize } = ctx.request.body;
-    // 计算开始索引
+    // Calculate the starting index
     const offset = (currentPage - 1) * pageSize;
-    // 分页获取该分类的商品信息
+    // Paginate and get product information for the category
     const Product = await productDao.GetProductByCategory(categoryID, offset, pageSize);
-    // 获取该分类所有的商品数量,用于前端分页计算
+    // Get the total number of products for the category for pagination calculation on the frontend
     const total = (await productDao.GetProductByCategory(categoryID)).length;
 
     ctx.body = {
@@ -98,25 +98,25 @@ module.exports = {
     }
   },
   /**
-   * 根据搜索条件,分页获取商品信息
+   * Paginate and get product information based on search criteria
    * @param {Object} ctx
    */
   GetProductBySearch: async ctx => {
     let { search, currentPage, pageSize } = ctx.request.body;
-    // 计算开始索引
+    // Calculate the starting index
     const offset = (currentPage - 1) * pageSize;
-    // 获取分类列表
+    // Get the category list
     const category = await productDao.GetCategory();
 
     let Product;
     let total;
 
     for (let i = 0; i < category.length; i++) {
-      // 如果搜索条件为某个分类名称,直接返回该分类的商品信息
+      // If the search criteria match a category name, directly return the products for that category
       if (search == category[i].category_name) {
-        // 获取该分类的商品信息
+        // Get the products for the category
         Product = await productDao.GetProductByCategory(category[i].category_id, offset, pageSize);
-        // 获取该分类所有的商品数量,用于前端分页计算
+        // Get the total number of products for the category for pagination calculation on the frontend
         total = (await productDao.GetProductByCategory(category[i].category_id)).length;
 
         ctx.body = {
@@ -127,9 +127,9 @@ module.exports = {
         return;
       }
     }
-    // 否则返回根据查询条件模糊查询的商品分页结果
+    // Otherwise, return the paginated results of products based on fuzzy search
     Product = await productDao.GetProductBySearch(search, offset, pageSize);
-    // 获取模糊查询的商品结果总数
+    // Get the total number of products for the fuzzy search
     total = (await productDao.GetProductBySearch(search)).length;
 
     ctx.body = {
@@ -139,7 +139,7 @@ module.exports = {
     }
   },
   /**
-   * 根据商品id,获取商品详细信息
+   * Get detailed product information based on product ID
    * @param {Object} ctx
    */
   GetDetails: async ctx => {
@@ -153,7 +153,7 @@ module.exports = {
     }
   },
   /**
-   * 根据商品id,获取商品图片,用于食品详情的页面展示
+   * Get product images based on product ID for product detail page display
    * @param {Object} ctx
    */
   GetDetailsPicture: async ctx => {
@@ -168,46 +168,47 @@ module.exports = {
   },
   CreateProduct: async ctx => {
     const { catid, name, title, intro, price, selling_price, num } = ctx.request.body;
-    const file = ctx.request.files?.image; // 获取上传的文件
+    const file = ctx.request.files?.image; // Get the uploaded file
 
     if (!file) {
-      ctx.body = { code: '002', message: '图片文件不能为空' };
+      ctx.body = { code: '002', message: 'The image file cannot be empty' };
       return;
     }
 
     const fileStream = fs.createReadStream(file.path);
     const fileName = `${Date.now()}_${path.basename(file.name)}`;
     const bucketName = 'mall-images';
-    const objectName = fileName;
+    const categoryName = await productDao.GetCategoryName(catid);
+    const objectName =  categoryName + '/' + fileName;
 
     try {
-      // 上传图片到 MinIO
+      // Upload the image to MinIO
       await minioClient.putObject(bucketName, objectName, fileStream);
       const imageUrl = `http://47.239.72.7:9001/${bucketName}/${objectName}`;
 
-      // 存入数据库
+      // Save to the database
       const result = await productDao.CreateProduct({
         catid, name, title, intro, price, selling_price, num, imageUrl
       });
 
-      ctx.body = { code: '001', message: 'product created succeed', productId: result.insertId };
+      ctx.body = { code: '001', message: 'Product created successfully', productId: result.insertId };
     } catch (error) {
-      ctx.body = { code: '003', message: 'product created failed', error };
+      ctx.body = { code: '003', message: 'Product creation failed', error };
     }
   },
   CreateCategory: async ctx => {
     const { catName } = ctx.request.body;
 
     if (!catName) {
-      ctx.body = { code: '002', message: 'catName should not be empty!' };
+      ctx.body = { code: '002', message: 'Category name should not be empty!' };
       return;
     }
 
     try {
       const result = await productDao.CreateCategory(catName);
-      ctx.body = { code: '001', message: 'category created succeed', categoryId: result.insertId };
+      ctx.body = { code: '001', message: 'Category created successfully', categoryId: result.insertId };
     } catch (error) {
-      ctx.body = { code: '003', message: 'category created failed', error };
+      ctx.body = { code: '003', message: 'Category creation failed', error };
     }
   }
 }

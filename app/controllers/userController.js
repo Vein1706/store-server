@@ -5,59 +5,59 @@ const { checkUserInfo, checkUserName } = require('../middleware/checkUserInfo');
 module.exports = {
 
   /**
-   * 用户登录
+   * User login
    * @param {Object} ctx
    */
   Login: async ctx => {
 
     let { userName, password } = ctx.request.body;
 
-    // 校验用户信息是否符合规则
+    // Validate whether the user information meets the rules
     if (!checkUserInfo(ctx, userName, password)) {
       return;
     }
 
-    // 连接数据库根据用户名和密码查询用户信息
+    // Connect to the database and query user information based on username and password
     let user = await userDao.Login(userName, password);
-    // 结果集长度为0则代表没有该用户
+    // If the result set length is 0, it means the user does not exist
     if (user.length === 0) {
       ctx.body = {
         code: '004',
-        msg: '用户名或密码错误'
+        msg: 'Incorrect username or password'
       }
       return;
     }
 
-    // 数据库设置用户名唯一
-    // 结果集长度为1则代表存在该用户
+    // The database ensures the username is unique
+    // If the result set length is 1, it means the user exists
     if (user.length === 1) {
 
       const loginUser = {
         user_id: user[0].user_id,
         userName: user[0].userName
       };
-      // 保存用户信息到session
+      // Save user information to session
       ctx.session.user = loginUser;
 
       ctx.body = {
         code: '001',
         user: loginUser,
-        msg: '登录成功'
+        msg: 'Login successfully'
       }
       return;
     }
 
-    //数据库设置用户名唯一
-    //若存在user.length != 1 || user.length!=0
-    //返回未知错误
-    //正常不会出现
+    // The database ensures the username is unique
+    // If user.length != 1 || user.length != 0
+    // Return an unknown error
+    // This should not normally occur
     ctx.body = {
       code: '500',
-      msg: '未知错误'
+      msg: 'Unknown error'
     }
   },
   /**
-   * 微信小程序用户登录
+   * Mini Program user login
    * @param {Object} ctx
    */
   miniProgramLogin: async ctx => {
@@ -66,142 +66,142 @@ module.exports = {
     let { code } = ctx.request.body;
 
     const api = `https://api.weixin.qq.com/sns/jscode2session?appid=${ appid }&secret=${ secret }&js_code=${ code }&grant_type=authorization_code`;
-    // 通过 wx.login 接口获得临时登录凭证 code 后
-    // 传到开发者服务器调用此接口完成登录流程。
+    // After obtaining the temporary login credential code through the wx.login interface,
+    // send it to the developer server to call this interface and complete the login process.
     const res = await rp.get({
       json: true,
       uri: api
     })
     const { session_key, openid } = res;
 
-    // 连接数据库根据用户名查询用户信息
+    // Connect to the database and query user information based on username
     let user = await userDao.FindUserName(openid);
     if (user.length === 0) {
-      // 结果集长度为0则代表不存在该用户,先注册
+      // If the result set length is 0, it means the user does not exist, register first
       try {
-        // 连接数据库插入用户信息
+        // Connect to the database and insert user information
         let registerResult = await userDao.Register(openid, openid);
         if (registerResult.affectedRows === 1) {
-          // 操作所影响的记录行数为1,则代表注册成功
-          await login();// 登录
+          // If the number of rows affected by the operation is 1, it means registration was successful
+          await login(); // Login
         }
       } catch (error) {
         console.log(error)
       }
     } else if (user.length === 1) {
-      // 如果已经存在，直接登录
+      // If the user already exists, log in directly
       await login();
     } else {
       ctx.body = {
         code: '500',
-        msg: '未知错误'
+        msg: 'Unknown error'
       }
     }
     async function login () {
-      // 连接数据库根据用户名和密码查询用户信息
+      // Connect to the database and query user information based on username and password
       let tempUser = await userDao.Login(openid, openid);
       if (tempUser.length === 0) {
-        // 登录失败
+        // Login failed
         ctx.body = {
           code: '004',
-          msg: '登录失败'
+          msg: 'Login failed'
         }
         return;
       }
       if (tempUser.length === 1) {
-        // 登录成功
+        // Login successful
         const loginUser = {
           user_id: tempUser[0].user_id,
           openId: openid,
           sessionKey: session_key
         };
-        // 保存用户信息到session
+        // Save user information to session
         ctx.session.user = loginUser;
 
         ctx.body = {
           code: '001',
           userId: tempUser[0].user_id,
-          msg: '登录成功'
+          msg: 'Login succeeded'
         }
         return;
       }
     }
   },
   /**
-   * 查询是否存在某个用户名,用于注册时前端校验
+   * Check if a username exists, used for front-end validation during registration
    * @param {Object} ctx
    */
   FindUserName: async ctx => {
     let { userName } = ctx.request.body;
 
-    // 校验用户名是否符合规则
+    // Validate whether the username meets the rules
     if (!checkUserName(ctx, userName)) {
       return;
     }
-    // 连接数据库根据用户名查询用户信息
+    // Connect to the database and query user information based on username
     let user = await userDao.FindUserName(userName);
-    // 结果集长度为0则代表不存在该用户,可以注册
+    // If the result set length is 0, it means the user does not exist and can register
     if (user.length === 0) {
       ctx.body = {
         code: '001',
-        msg: '用户名不存在，可以注册'
+        msg: 'The user name does not exist. You can sign up'
       }
       return;
     }
 
-    //数据库设置用户名唯一
-    //结果集长度为1则代表存在该用户,不可以注册
+    // The database ensures the username is unique
+    // If the result set length is 1, it means the user exists and cannot register
     if (user.length === 1) {
       ctx.body = {
         code: '004',
-        msg: '用户名已经存在，不能注册'
+        msg: 'The user name already exists and cannot be signed up'
       }
       return;
     }
 
-    //数据库设置用户名唯一，
-    //若存在user.length != 1 || user.length!=0
-    //返回未知错误
-    //正常不会出现
+    // The database ensures the username is unique
+    // If user.length != 1 || user.length != 0
+    // Return an unknown error
+    // This should not normally occur
     ctx.body = {
       code: '500',
-      msg: '未知错误'
+      msg: 'Unknown error'
     }
   },
   Register: async ctx => {
     let { userName, password } = ctx.request.body;
 
-    // 校验用户信息是否符合规则
+    // Validate whether the user information meets the rules
     if (!checkUserInfo(ctx, userName, password)) {
       return;
     }
-    // 连接数据库根据用户名查询用户信息
-    // 先判断该用户是否存在
+    // Connect to the database and query user information based on username
+    // First, check if the user already exists
     let user = await userDao.FindUserName(userName);
 
     if (user.length !== 0) {
       ctx.body = {
         code: '004',
-        msg: '用户名已经存在，不能注册'
+        msg: 'The user name already exists and cannot be signed up'
       }
       return;
     }
 
     try {
-      // 连接数据库插入用户信息
+      // Connect to the database and insert user information
       let registerResult = await userDao.Register(userName, password);
-      // 操作所影响的记录行数为1,则代表注册成功
+      // If the number of rows affected by the operation is 1, it means registration was successful
       if (registerResult.affectedRows === 1) {
         ctx.body = {
           code: '001',
-          msg: '注册成功'
+          msg: 'Sign up successfully'
         }
         return;
       }
-      // 否则失败
+      // Otherwise, registration failed
       ctx.body = {
         code: '500',
-        msg: '未知错误，注册失败'
+        msg: 'Sign up failed, unknown reason'
       }
     } catch (error) {
       reject(error);

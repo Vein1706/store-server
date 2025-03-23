@@ -21,7 +21,7 @@ module.exports = {
     if (tempCollect.length > 0) {
       ctx.body = {
         code: '003',
-        msg: '该商品已经添加收藏，请到我的收藏查看'
+        msg: 'This item has been added to my favorites, please go to my favorites'
       }
       return;
     }
@@ -35,7 +35,7 @@ module.exports = {
       if (result.affectedRows === 1) {
         ctx.body = {
           code: '001',
-          msg: '添加收藏成功'
+          msg: 'Add favorites successfully'
         }
         return;
       }
@@ -45,7 +45,7 @@ module.exports = {
 
     ctx.body = {
       code: '002',
-      msg: '添加收藏失败'
+      msg: 'Add favorites failed'
     }
   },
   /**
@@ -65,7 +65,7 @@ module.exports = {
     if (collect.length == 0) {
       ctx.body = {
         code: '002',
-        msg: '该用户没有收藏的商品'
+        msg: 'The user has no favorites'
       }
       return;
     }
@@ -106,7 +106,7 @@ module.exports = {
         if (result.affectedRows === 1) {
           ctx.body = {
             code: '001',
-            msg: '删除收藏成功'
+            msg: 'Succeeded in deleting a collection'
           }
           return;
         }
@@ -117,7 +117,7 @@ module.exports = {
       // 不存在则返回信息
       ctx.body = {
         code: '002',
-        msg: '该商品不在收藏列表'
+        msg: 'This item is not on the Favorites list'
       }
     }
   }

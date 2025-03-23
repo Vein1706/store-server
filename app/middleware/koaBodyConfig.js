@@ -2,15 +2,15 @@ let { uploadDir } = require('../../config');
 
 const koaBodyConfig = {
   multipart: true,
-  // parsedMethods默认是['POST', 'PUT', 'PATCH']
+  // parsedMethods defaults to ['POST', 'PUT', 'PATCH']
   parsedMethods: ['POST', 'PUT', 'PATCH', 'GET', 'HEAD', 'DELETE'],
   formidable: {
-    uploadDir: uploadDir, // 设置文件上传目录
-    keepExtensions: true, // 保持文件的后缀
-    maxFieldsSize: 2 * 1024 * 1024, // 文件上传大小限制
-    onFileBegin: (name, file) => { // 文件上传前的设置
+    uploadDir: uploadDir, // Set the file upload directory
+    keepExtensions: true, // Keep the file extensions
+    maxFieldsSize: 2 * 1024 * 1024, // File upload size limit
+    onFileBegin: (name, file) => { // Settings before file upload
       // console.log(`name: ${name}`);
-      // console.log(file);
+      // console.log(file); // Log the file being uploaded
     }
   }
 }

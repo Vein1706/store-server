@@ -4,7 +4,7 @@ const checkLogin = require('../middleware/checkLogin');
 
 let methods = {
   /**
-   * 生成购物车详细信息
+   * Generate detailed shopping cart information
    * @param {Object} data
    */
   ShoppingCartData: async data => {
@@ -32,18 +32,18 @@ let methods = {
 
 module.exports = {
   /**
-   * 获取购物车信息
+   * Get shopping cart information
    * @param {Object} ctx
    */
   GetShoppingCart: async ctx => {
     let { user_id } = ctx.request.body;
-    // 校验用户是否登录
+    // Validate if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
-    // 获取购物车信息
+    // Get shopping cart information
     const shoppingCart = await shoppingCartDao.GetShoppingCart(user_id);
-    // 生成购物车详细信息
+    // Generate detailed shopping cart information
     const data = await methods.ShoppingCartData(shoppingCart);
 
     ctx.body = {
@@ -52,41 +52,41 @@ module.exports = {
     }
   },
   /**
-   * 插入购物车信息
+   * Add shopping cart information
    * @param {Object} ctx
    */
   AddShoppingCart: async ctx => {
     let { user_id, product_id } = ctx.request.body;
-    // 校验用户是否登录
+    // Validate if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
 
     let tempShoppingCart = await shoppingCartDao.FindShoppingCart(user_id, product_id);
-    //判断该用户的购物车是否存在该商品
+    // Check if the user's shopping cart already contains the product
     if (tempShoppingCart.length > 0) {
-      //如果存在则把数量+1
+      // If it exists, increment the quantity by 1
       const tempNum = tempShoppingCart[0].num + 1;
 
       const product = await productDao.GetProductById(tempShoppingCart[0].product_id);
       const maxNum = Math.floor(product[0].product_num / 2);
-      //判断数量是否达到限购数量
+      // Check if the quantity exceeds the purchase limit
       if (tempNum > maxNum) {
         ctx.body = {
           code: '003',
-          msg: '数量达到限购数量 ' + maxNum
+          msg: 'The quantity reached the purchase limit ' + maxNum
         }
         return;
       }
 
       try {
-        // 更新购物车信息,把数量+1
+        // Update shopping cart information, increment the quantity by 1
         const result = await shoppingCartDao.UpdateShoppingCart(tempNum, user_id, product_id);
 
         if (result.affectedRows === 1) {
           ctx.body = {
             code: '002',
-            msg: '该商品已在购物车，数量 +1'
+            msg: 'The item is already in the cart, quantity +1'
           }
           return;
         }
@@ -94,20 +94,20 @@ module.exports = {
         reject(error);
       }
     } else {
-      //不存在则添加
+      // If it does not exist, add it
       try {
-        // 新插入购物车信息
+        // Insert new shopping cart information
         const res = await shoppingCartDao.AddShoppingCart(user_id, product_id);
-        // 判断是否插入成功
+        // Check if the insertion was successful
         if (res.affectedRows === 1) {
-          // 如果成功,获取该商品的购物车信息
+          // If successful, get the shopping cart information for the product
           const shoppingCart = await shoppingCartDao.FindShoppingCart(user_id, product_id);
-          // 生成购物车详细信息
+          // Generate detailed shopping cart information
           const data = await methods.ShoppingCartData(shoppingCart);
 
           ctx.body = {
             code: '001',
-            msg: '添加购物车成功',
+            msg: 'Add cart successfully',
             shoppingCartData: data
           }
           return;
@@ -119,32 +119,32 @@ module.exports = {
 
     ctx.body = {
       code: '005',
-      msg: '添加购物车失败,未知错误'
+      msg: 'Add cart failed, unknown reason'
     }
   },
   /**
-   * 删除购物车信息
+   * Delete shopping cart information
    * @param {Object} ctx
    */
   DeleteShoppingCart: async ctx => {
     let { user_id, product_id } = ctx.request.body;
-    // 校验用户是否登录
+    // Validate if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
 
-    // 判断该用户的购物车是否存在该商品
+    // Check if the user's shopping cart contains the product
     let tempShoppingCart = await shoppingCartDao.FindShoppingCart(user_id, product_id);
 
     if (tempShoppingCart.length > 0) {
-      // 如果存在则删除
+      // If it exists, delete it
       try {
         const result = await shoppingCartDao.DeleteShoppingCart(user_id, product_id);
-        // 判断是否删除成功
+        // Check if the deletion was successful
         if (result.affectedRows === 1) {
           ctx.body = {
             code: '001',
-            msg: '删除购物车成功'
+            msg: 'Deleted cart successfully'
           }
           return;
         }
@@ -152,64 +152,64 @@ module.exports = {
         reject(error);
       }
     } else {
-      // 不存在则返回信息
+      // If it does not exist, return a message
       ctx.body = {
         code: '002',
-        msg: '该商品不在购物车'
+        msg: 'The item is not in the shopping cart'
       }
     }
   },
   /**
-   * 更新购物车商品数量
+   * Update the quantity of items in the shopping cart
    * @param {Object} ctx
    */
   UpdateShoppingCart: async ctx => {
     let { user_id, product_id, num } = ctx.request.body;
-    // 校验用户是否登录
+    // Validate if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
-    // 判断数量是否小于1
+    // Check if the quantity is less than 1
     if (num < 1) {
       ctx.body = {
         code: '004',
-        msg: '数量不合法'
+        msg: 'Illegal quantity'
       }
       return;
     }
-    // 判断该用户的购物车是否存在该商品
+    // Check if the user's shopping cart contains the product
     let tempShoppingCart = await shoppingCartDao.FindShoppingCart(user_id, product_id);
 
     if (tempShoppingCart.length > 0) {
-      // 如果存在则修改
+      // If it exists, update it
 
-      // 判断数量是否有变化
+      // Check if the quantity has changed
       if (tempShoppingCart[0].num == num) {
         ctx.body = {
           code: '003',
-          msg: '数量没有发生变化'
+          msg: 'The quantity has not changed'
         }
         return;
       }
       const product = await productDao.GetProductById(product_id);
       const maxNum = Math.floor(product[0].product_num / 2);
-      // 判断数量是否达到限购数量
+      // Check if the quantity exceeds the purchase limit
       if (num > maxNum) {
         ctx.body = {
           code: '004',
-          msg: '数量达到限购数量 ' + maxNum
+          msg: 'The quantity reached the purchase limit ' + maxNum
         }
         return;
       }
 
       try {
-        // 修改购物车信息
+        // Update shopping cart information
         const result = await shoppingCartDao.UpdateShoppingCart(num, user_id, product_id);
-        // 判断是否修改成功
+        // Check if the update was successful
         if (result.affectedRows === 1) {
           ctx.body = {
             code: '001',
-            msg: '修改购物车数量成功'
+            msg: 'Modifying the number of shopping carts succeeded'
           }
           return;
         }
@@ -217,10 +217,10 @@ module.exports = {
         reject(error);
       }
     } else {
-      //不存在则返回信息
+      // If it does not exist, return a message
       ctx.body = {
         code: '002',
-        msg: '该商品不在购物车'
+        msg: 'The item is not in the shopping cart'
       }
     }
   }

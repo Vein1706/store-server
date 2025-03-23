@@ -22,6 +22,7 @@ create table carousel(
   imgPath char (50) not null,
   describes char (50) not null
 );
+
 -- insert into carousel
 -- values(null, 'public/imgs/cms_1.jpg', '123456');
 -- insert into carousel
@@ -30,6 +31,7 @@ create table carousel(
 -- values(null, 'public/imgs/cms_3.jpg', '123456');
 -- insert into carousel
 -- values(null, 'public/imgs/cms_4.jpg', '123456');
+
 create table category(
   category_id int primary key auto_increment,
   category_name char(20) not null

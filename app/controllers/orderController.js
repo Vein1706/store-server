@@ -5,32 +5,32 @@ const checkLogin = require('../middleware/checkLogin');
 
 module.exports = {
   /**
-   * 获取用户的所有订单信息
+   * Get all order information for a user
    * @param {Object} ctx
    */
   GetOrder: async ctx => {
     let { user_id } = ctx.request.body;
-    // 校验用户是否登录
+    // Verify if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
-    // 获取所有的订单id
+    // Get all order IDs
     const ordersGroup = await orderDao.GetOrderGroup(user_id);
 
-    // 该用户没有订单,直接返回信息
+    // If the user has no orders, return the information directly
     if (ordersGroup.length == 0) {
       ctx.body = {
         code: '002',
-        msg: '该用户没有订单信息'
+        msg: 'The user does not have order information'
       }
       return;
     }
 
-    // 获取所有的订单详细信息
+    // Get all detailed order information
     const orders = await orderDao.GetOrder(user_id);
 
     let ordersList = [];
-    // 生成每个订单的详细信息列表
+    // Generate a detailed information list for each order
     for (let i = 0; i < ordersGroup.length; i++) {
       const orderID = ordersGroup[i];
       let tempOrder = [];
@@ -39,7 +39,7 @@ module.exports = {
         const order = orders[j];
 
         if (orderID.order_id == order.order_id) {
-          // 获取每个商品详细信息
+          // Get detailed information for each product
           const product = await productDao.GetProductById(order.product_id);
           order.product_name = product[0].product_name;
           order.product_picture = product[0].product_picture;
@@ -57,23 +57,23 @@ module.exports = {
 
   },
   /**
-   * 添加用户订单信息
+   * Add order information for a user
    * @param {Object} ctx
    */
   AddOrder: async (ctx) => {
     let { user_id, products } = ctx.request.body;
-    // 校验用户是否登录
+    // Verify if the user is logged in
     if (!checkLogin(ctx, user_id)) {
       return;
     }
 
-    // 获取当前时间戳
+    // Get the current timestamp
     const timeTemp = new Date().getTime();
-    // 生成订单id：用户id+时间戳(string)
+    // Generate order ID: user ID + timestamp (string)
     const orderID = +("" + user_id + timeTemp);
 
     let data = [];
-    // 根据数据库表结构生成字段信息
+    // Generate field information based on the database table structure
     for (let i = 0; i < products.length; i++) {
       const temp = products[i];
       let product = [orderID, user_id, temp.productID, temp.num, temp.price, timeTemp];
@@ -81,35 +81,35 @@ module.exports = {
     }
 
     try {
-      // 把订单信息插入数据库
+      // Insert order information into the database
       const result = await orderDao.AddOrder(products.length, data);
 
-      // 插入成功
+      // If insertion is successful
       if (result.affectedRows == products.length) {
-        //删除购物车
+        // Delete items from the shopping cart
         let rows = 0;
         for (let i = 0; i < products.length; i++) {
           const temp = products[i];
           const res = await shoppingCartDao.DeleteShoppingCart(user_id, temp.productID);
           rows += res.affectedRows;
         }
-        //判断删除购物车是否成功
+        // Check if the shopping cart was updated successfully
         if (rows != products.length) {
           ctx.body = {
             code: '002',
-            msg: '购买成功,但购物车没有更新成功'
+            msg: 'The purchase was successful, but the shopping cart was not updated successfully'
           }
           return;
         }
 
         ctx.body = {
           code: '001',
-          msg: '购买成功'
+          msg: 'Purchase succeeded'
         }
       } else {
         ctx.body = {
           code: '004',
-          msg: '购买失败,未知原因'
+          msg: 'Purchase failed, unknown reason'
         }
       }
     } catch (error) {

@@ -1,7 +1,7 @@
 const resourcesDao = require('../models/dao/resourcesDao');
 module.exports = {
   /**
-   * 获取轮播图数据
+   * Get carousel data
    * @param {Object} ctx
    */
   Carousel: async ctx => {
