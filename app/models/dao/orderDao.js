@@ -3,7 +3,7 @@ const db = require('./db.js');
 module.exports = {
   // 连接数据库获取所有的订单id
   GetOrderGroup: async (user_id) => {
-    let sql = 'select order_id from orders where user_id = ? group by order_id desc';
+    let sql = 'select order_id from orders where user_id = ? order by order_id desc';
     return await db.query(sql, user_id);
   },
   // 连接数据库获取所有的订单详细信息

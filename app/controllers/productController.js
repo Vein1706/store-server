@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const minioClient = new Minio.Client({
-  endPoint: '47.239.72.7',
+  endPoint: '47.239.127.181',
   port: 9001,
   useSSL: false,
   accessKey: 'admin',
@@ -184,7 +184,7 @@ module.exports = {
     try {
       // Upload the image to MinIO
       await minioClient.putObject(bucketName, objectName, fileStream);
-      const imageUrl = `http://47.239.72.7:9001/${bucketName}/${objectName}`;
+      const imageUrl = `http://47.239.127.181:9001/${bucketName}/${objectName}`;
 
       // Save to the database
       const result = await productDao.CreateProduct({

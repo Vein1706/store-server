@@ -51,7 +51,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            fetch("http://47.239.72.7/api/product/getCategory", {
+            fetch("http://47.239.127.181/api/product/getCategory", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             })
@@ -74,7 +74,7 @@
 
         document.getElementById('categoryForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            fetch("http://47.239.72.7/api/product/createCategory", {
+            fetch("http://47.239.127.181/api/product/createCategory", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ catName: document.getElementById('catName').value })
@@ -107,7 +107,7 @@
                 return;
             }
             let formData = new FormData(this);
-            fetch("http://47.239.72.7/api/product/createProduct", {
+            fetch("http://47.239.127.181/api/product/createProduct", {
                 method: "POST",
                 body: formData
             })
