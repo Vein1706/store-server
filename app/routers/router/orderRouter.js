@@ -5,6 +5,7 @@ let orderRouter = new Router();
 
 orderRouter
   .post('/user/order/getOrder', orderController.GetOrder)
-  .post('/user/order/addOrder', orderController.AddOrder)
+  .post('/user/order/createPayPalOrder', orderController.CreatePayPalOrder)
+  .post('/user/order/capturePayPalOrder/:orderID', orderController.CapturePayPalOrder);
 
 module.exports = orderRouter;

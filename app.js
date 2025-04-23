@@ -3,6 +3,7 @@ const KoaStatic = require('koa-static');
 const KoaBody = require('koa-body');
 const Session = require('koa-session');
 const cors = require('@koa/cors');
+require('dotenv').config();
 
 let { Port, staticDir } = require('./config');
 

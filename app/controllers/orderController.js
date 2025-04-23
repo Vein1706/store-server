@@ -2,6 +2,37 @@ const orderDao = require('../models/dao/orderDao');
 const shoppingCartDao = require('../models/dao/shoppingCartDao');
 const productDao = require('../models/dao/productDao');
 const checkLogin = require('../middleware/checkLogin');
+const {
+  ApiError,
+  CheckoutPaymentIntent,
+  Client,
+  Environment,
+  LogLevel,
+  OrdersController,
+} = require('@paypal/paypal-server-sdk');
+const { v4: uuidv4 } = require('uuid');
+
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PORT = 8080 } = process.env;
+
+const client = new Client({
+  clientCredentialsAuthCredentials: {
+    oAuthClientId: PAYPAL_CLIENT_ID,
+    oAuthClientSecret: PAYPAL_CLIENT_SECRET,
+  },
+  timeout: 0,
+  environment: Environment.Sandbox,
+  logging: {
+    logLevel: LogLevel.Info,
+    logRequest: {
+      logBody: true,
+    },
+    logResponse: {
+      logHeaders: true,
+    },
+  },
+});
+
+const ordersController = new OrdersController(client);
 
 module.exports = {
   /**
@@ -56,64 +87,115 @@ module.exports = {
     }
 
   },
+  
   /**
-   * Add order information for a user
-   * @param {Object} ctx
+   * Create PayPal order
    */
-  AddOrder: async (ctx) => {
-    let { user_id, products } = ctx.request.body;
-    // Verify if the user is logged in
+  CreatePayPalOrder: async (ctx) => {
+    const { user_id, cart } = ctx.request.body;
+    
     if (!checkLogin(ctx, user_id)) {
       return;
     }
 
-    // Get the current timestamp
-    const timeTemp = new Date().getTime();
-    // Generate order ID: user ID + timestamp (string)
-    const orderID = +("" + user_id + timeTemp);
-
-    let data = [];
-    // Generate field information based on the database table structure
-    for (let i = 0; i < products.length; i++) {
-      const temp = products[i];
-      let product = [orderID, user_id, temp.productID, temp.num, temp.price, timeTemp];
-      data.push(...product);
+    // Calculate total amount from cart
+    let total = 0;
+    for (let i = 0; i < cart.length; i++) {
+      const temp = cart[i];
+      total += temp.price * temp.quantity;
     }
+      
+    const collect = {
+      body: {
+        intent: CheckoutPaymentIntent.Capture,
+        purchaseUnits: [
+          {
+            amount: {
+              currencyCode: "HKD",
+              value: String(total),
+            },
+          },
+        ],
+      },
+      prefer: "return=minimal",
+    };
 
     try {
-      // Insert order information into the database
-      const result = await orderDao.AddOrder(products.length, data);
+      const { body } = await ordersController.createOrder(
+        collect
+      );
 
-      // If insertion is successful
-      if (result.affectedRows == products.length) {
-        // Delete items from the shopping cart
-        let rows = 0;
+      ctx.body = {
+        code: '001',
+        orderID: JSON.parse(body).id
+      };
+    } catch (error) {
+      console.error('PayPal order creation error:', error);
+      ctx.body = {
+        code: '005',
+        msg: 'Failed to create PayPal order'
+      };
+    }
+  },
+
+  /**
+   * Capture PayPal payment and create order in our system
+   */
+  CapturePayPalOrder: async (ctx) => {
+    const { orderID } = ctx.params;
+    const { user_id, products } = ctx.request.body;
+
+    if (!checkLogin(ctx, user_id)) {
+      return;
+    }
+
+    const collect = {
+      id: orderID,
+      prefer: "return=minimal",
+    };
+
+    try {
+      // 1. Capture PayPal payment
+      const { body, ...httpResponse } = await ordersController.captureOrder(
+        collect
+      );
+
+      // 2. Only create order in our system if PayPal capture succeeded
+      if (httpResponse.result.status === 'COMPLETED') {
+        const timeTemp = new Date().getTime();
+        const localOrderID = +("" + user_id + timeTemp);
+
+        let data = [];
         for (let i = 0; i < products.length; i++) {
           const temp = products[i];
-          const res = await shoppingCartDao.DeleteShoppingCart(user_id, temp.productID);
-          rows += res.affectedRows;
-        }
-        // Check if the shopping cart was updated successfully
-        if (rows != products.length) {
-          ctx.body = {
-            code: '002',
-            msg: 'The purchase was successful, but the shopping cart was not updated successfully'
-          }
-          return;
+          let product = [localOrderID, user_id, temp.productID, temp.num, temp.price, timeTemp];
+          data.push(...product);
         }
 
-        ctx.body = {
-          code: '001',
-          msg: 'Purchase succeeded'
-        }
-      } else {
-        ctx.body = {
-          code: '004',
-          msg: 'Purchase failed, unknown reason'
+        // 3. Insert into our database
+        const result = await orderDao.AddOrder(products.length, data);
+        
+        if (result.affectedRows === products.length) {
+          // 4. Clear cart
+          let rows = 0;
+          for (let i = 0; i < products.length; i++) {
+            const temp = products[i];
+            const res = await shoppingCartDao.DeleteShoppingCart(user_id, temp.productID);
+            rows += res.affectedRows;
+          }
+
+          ctx.status = httpResponse.statusCode;
+          ctx.body = JSON.parse(body);
         }
       }
     } catch (error) {
-      reject(error);
+      console.error('PayPal capture error:', error);
+      ctx.body = {
+        code: '006',
+        msg: 'Failed to capture PayPal payment'
+      };
     }
   }
+
+
 }
