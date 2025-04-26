@@ -21,6 +21,10 @@ app.use(cors(corsOptions));
 const error = require('./app/middleware/error');
 app.use(error);
 
+// 限流
+const flowLimit = require('./app/middleware/flowLimit');
+app.use(flowLimit);
+
 // 为静态资源请求重写url
 const rewriteUrl = require('./app/middleware/rewriteUrl');
 app.use(rewriteUrl);

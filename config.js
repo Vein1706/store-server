@@ -18,5 +18,9 @@ module.exports = {
     user: 'root',
     password: 'liuzewei123123',
     database: 'storeDB'
-  }
+  },
+  flowLimit: {
+    duration: 60000, // 1 minute window
+    max: 100,        // limit each IP to 100 requests per window
+  },
 }
