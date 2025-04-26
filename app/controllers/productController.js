@@ -168,32 +168,73 @@ module.exports = {
   },
   CreateProduct: async ctx => {
     const { catid, name, title, intro, price, selling_price, num } = ctx.request.body;
-    const file = ctx.request.files?.image; // Get the uploaded file
+    const mainImage = ctx.request.files?.main_image; // Main product image
+    
+    let detailImages = [];
+    if (ctx.request.files) {
+      detailImages = Array.isArray(ctx.request.files.detail_images)
+        ? ctx.request.files.detail_images
+        : (ctx.request.files.detail_images ? [ctx.request.files.detail_images] : []);
+    }
 
-    if (!file) {
-      ctx.body = { code: '002', message: 'The image file cannot be empty' };
+    if (!mainImage) {
+      ctx.body = { code: '002', message: 'The main image file cannot be empty' };
       return;
     }
 
-    const fileStream = fs.createReadStream(file.path);
-    const fileName = `${Date.now()}_${path.basename(file.name)}`;
-    const bucketName = 'mall-images';
-    const categoryName = await productDao.GetCategoryName(catid);
-    const objectName =  categoryName + '/' + fileName;
-
     try {
-      // Upload the image to MinIO
-      await minioClient.putObject(bucketName, objectName, fileStream);
-      const imageUrl = `http://47.239.127.181:9001/${bucketName}/${objectName}`;
+      // 1. Upload main product image to MinIO
+      const mainImageStream = fs.createReadStream(mainImage.path);
+      const mainImageName = `${Date.now()}_${path.basename(mainImage.name)}`;
+      const bucketName = 'mall-images';
+      const categoryName = await productDao.GetCategoryName(catid);
+      const mainImageObjectName = `${categoryName}/products/${mainImageName}`;
 
-      // Save to the database
-      const result = await productDao.CreateProduct({
-        catid, name, title, intro, price, selling_price, num, imageUrl
+      await minioClient.putObject(bucketName, mainImageObjectName, mainImageStream);
+      const mainImageUrl = `http://47.239.127.181:9001/${bucketName}/${mainImageObjectName}`;
+
+      // 2. Create product in database
+      const productResult = await productDao.CreateProduct({
+        catid, name, title, intro, price, selling_price, num, imageUrl: mainImageUrl
       });
+      const productId = productResult.insertId;
 
-      ctx.body = { code: '001', message: 'Product created successfully', productId: result.insertId };
+      // 3. Upload detail images if they exist
+      const detailImageUrls = [];
+      if (detailImages.length > 0) {
+        // Handle single file case (when only one detail image is uploaded)
+        const filesToProcess = Array.isArray(detailImages) ? detailImages : [detailImages];
+
+        for (const [index, file] of filesToProcess.entries()) {
+          const detailImageStream = fs.createReadStream(file.path);
+          const detailImageName = `${productId}_detail_${index}_${path.basename(file.name)}`;
+          const detailImageObjectName = `${categoryName}/products/details/${detailImageName}`;
+
+          await minioClient.putObject(bucketName, detailImageObjectName, detailImageStream);
+          const detailImageUrl = `http://47.239.127.181:9001/${bucketName}/${detailImageObjectName}`;
+          detailImageUrls.push(detailImageUrl);
+        }
+
+        // Save detail images to database
+        await productDao.CreateProductDetails(productId, detailImageUrls);
+      }
+
+      ctx.body = {
+        code: '001',
+        message: 'Product created successfully',
+        productId,
+        detailImageCount: detailImageUrls.length
+      };
     } catch (error) {
-      ctx.body = { code: '003', message: 'Product creation failed', error };
+      console.error('Product creation failed:', error);
+      ctx.body = { code: '003', message: 'Product creation failed', error: error.message };
+    } finally {
+      // Clean up temporary files
+      if (mainImage) fs.unlinkSync(mainImage.path);
+      if (detailImages.length > 0) {
+        const filesToClean = Array.isArray(detailImages) ? detailImages : [detailImages];
+        filesToClean.forEach(file => fs.unlinkSync(file.path));
+      }
     }
   },
   CreateCategory: async ctx => {

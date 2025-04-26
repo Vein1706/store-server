@@ -63,6 +63,19 @@ module.exports = {
     const sql = "select * from product_picture where product_id = ? ";
     return await db.query(sql, productID);
   },
+  CreateProductDetails: async (productId, imageUrls) => {
+    // First delete any existing detail images for this product
+    await db.query('DELETE FROM product_picture WHERE product_id = ?', [productId]);
+
+    // Then insert the new ones
+    const insertPromises = imageUrls.map(url => {
+      const sql = `INSERT INTO product_picture (product_id, product_picture, intro) 
+                   VALUES (?, ?, NULL)`;
+      return db.query(sql, [productId, url]);
+    });
+
+    return Promise.all(insertPromises);
+  },
   CreateProduct: async (product) => {
     const sql = `INSERT INTO product (category_id, product_name, product_title, product_intro, product_price, product_selling_price, product_num, product_sales, product_picture)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
