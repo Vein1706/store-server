@@ -1,4 +1,3 @@
-// app/middleware/flowLimit.js
 const RateLimit = require('koa2-ratelimit').RateLimit;
 const { flowLimit } = require('../../config');
 

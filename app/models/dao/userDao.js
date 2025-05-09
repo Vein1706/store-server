@@ -13,7 +13,7 @@ module.exports = {
   },
   // 连接数据库插入用户信息
   Register: async (userName, password) => {
-    const sql = 'insert into users values(null,?,?,null)';
+    const sql = 'insert into users values(null,?,?,null,0)';
     return await db.query(sql, [userName, password]);
   }
 }

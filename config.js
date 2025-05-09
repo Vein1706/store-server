@@ -20,7 +20,7 @@ module.exports = {
     database: 'storeDB'
   },
   flowLimit: {
-    duration: 60000, // 1 minute window
+    duration: 5 * 60 * 1000, // 5 minutes window
     max: 100,        // limit each IP to 100 requests per window
   },
 }
